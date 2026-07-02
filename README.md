@@ -74,11 +74,6 @@ AI Chatbot Assistance
 
 ## 📸 Application Preview
 
-screenshots/home.png
-screenshots/login.png
-screenshots/dashboard.png
-screenshots/edit-task.png
-screenshots/analytics.png
 - Login Page
 - Dashboard
 - AI Task Generator
@@ -91,7 +86,7 @@ screenshots/analytics.png
 
 📹 **Demo Video**
 
-> *(Paste your Loom / Google Drive / Unlisted YouTube link here)*
+> https://www.loom.com/share/95a07181c96543e69c82fb7a14cfc798
 
 The demo showcases:
 
