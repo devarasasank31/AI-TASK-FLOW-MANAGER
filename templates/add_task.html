@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card p-4">
+            <h4 class="fw-bold mb-4"><i class="bi bi-plus-circle me-2"></i>Add New Task</h4>
+            <form method="post" id="taskForm">
+                {% csrf_token %}
+
+                <!-- NLP Quick Input -->
+                <div class="card bg-light border-0 p-3 mb-4">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-magic me-1" style="color:#7c3aed"></i>
+                        <span class="ai-badge">AI</span> Quick Input — Type naturally
+                    </label>
+                    <div class="input-group">
+                        <input type="text" id="nlpInput" class="form-control"
+                               placeholder='e.g. "Submit report by Friday, high priority"'>
+                        <button type="button" class="btn btn-ai" id="nlpBtn">
+                            <span id="nlpSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                            Parse with AI
+                        </button>
+                    </div>
+                    <small class="text-muted mt-1">AI will extract title, description, priority, and due date automatically</small>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Task Title *</label>
+                    <div class="input-group">
+                        <input type="text" name="title" id="titleInput" class="form-control" required placeholder="Enter task title">
+                        <button type="button" class="btn btn-ai" id="descBtn" title="Generate description with AI">
+                            <span id="descSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                            <i class="bi bi-magic"></i> AI Describe
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Description</label>
+                    <textarea name="description" id="descInput" class="form-control" rows="3"
+                              placeholder="Task description (or use AI to generate)"></textarea>
+                </div>
+
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Priority</label>
+                        <div class="input-group">
+                            <select name="priority" id="priorityInput" class="form-select">
+                                <option value="High">High</option>
+                                <option value="Medium" selected>Medium</option>
+                                <option value="Low">Low</option>
+                            </select>
+                            <button type="button" class="btn btn-ai" id="priorityBtn" title="AI suggest priority">
+                                <span id="priSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                                <i class="bi bi-lightning"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Status</label>
+                        <select name="status" class="form-select">
+                            <option value="Pending">Pending</option>
+                            <option value="In Progress">In Progress</option>
+                            <option value="Completed">Completed</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold">Due Date</label>
+                        <input type="date" name="due_date" id="dueDateInput" class="form-control">
+                    </div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">Save Task</button>
+                    <button type="button" class="btn btn-outline-secondary" id="subtaskBtn">
+                        <span id="subSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                        <i class="bi bi-diagram-3 me-1"></i>Generate Subtasks
+                    </button>
+                    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card p-4 d-none" id="subtaskCard">
+            <h6 class="fw-bold mb-3"><i class="bi bi-list-task me-2" style="color:#7c3aed"></i>AI Generated Subtasks</h6>
+            <div id="subtaskList"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const csrf = '{{ csrf_token }}';
+
+async function postAI(url, body) {
+    const r = await fetch(url, {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','X-CSRFToken': csrf},
+        body: JSON.stringify(body)
+    });
+    return r.json();
+}
+
+function spin(id, show) {
+    document.getElementById(id).classList.toggle('d-none', !show);
+}
+
+document.getElementById('nlpBtn').onclick = async () => {
+    const text = document.getElementById('nlpInput').value.trim();
+    if (!text) return;
+    spin('nlpSpinner', true);
+    const data = await postAI('/ai/nlp/', {text});
+    spin('nlpSpinner', false);
+    if (data.title) document.getElementById('titleInput').value = data.title;
+    if (data.description) document.getElementById('descInput').value = data.description;
+    if (data.priority) document.getElementById('priorityInput').value = data.priority;
+    if (data.due_date) document.getElementById('dueDateInput').value = data.due_date;
+};
+
+document.getElementById('descBtn').onclick = async () => {
+    const title = document.getElementById('titleInput').value.trim();
+    if (!title) { alert('Enter a title first'); return; }
+    spin('descSpinner', true);
+    const data = await postAI('/ai/description/', {title});
+    spin('descSpinner', false);
+    if (data.description) document.getElementById('descInput').value = data.description;
+};
+
+document.getElementById('priorityBtn').onclick = async () => {
+    const title = document.getElementById('titleInput').value.trim();
+    const description = document.getElementById('descInput').value;
+    if (!title) { alert('Enter a title first'); return; }
+    spin('priSpinner', true);
+    const data = await postAI('/ai/priority/', {title, description});
+    spin('priSpinner', false);
+    if (data.priority) document.getElementById('priorityInput').value = data.priority;
+};
+
+document.getElementById('subtaskBtn').onclick = async () => {
+    const title = document.getElementById('titleInput').value.trim();
+    const description = document.getElementById('descInput').value;
+    if (!title) { alert('Enter a title first'); return; }
+    spin('subSpinner', true);
+    const data = await postAI('/ai/subtasks/', {title, description});
+    spin('subSpinner', false);
+    if (data.subtasks && data.subtasks.length) {
+        const card = document.getElementById('subtaskCard');
+        const list = document.getElementById('subtaskList');
+        card.classList.remove('d-none');
+        list.innerHTML = data.subtasks.map((s, i) =>
+            `<div class="d-flex align-items-center mb-2 p-2 bg-light rounded">
+                <span class="badge bg-secondary me-2">${i+1}</span>
+                <div>
+                    <div class="fw-semibold">${s.subtask}</div>
+                    <small class="text-muted">~${s.estimated_hours}h</small>
+                </div>
+            </div>`
+        ).join('');
+    }
+};
+</script>
+{% endblock %}

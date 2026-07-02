@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center mt-4">
+    <div class="col-md-5">
+        <div class="card p-4">
+            <h3 class="fw-bold mb-4 text-center">Login</h3>
+            <form method="post">
+                {% csrf_token %}
+                {% for field in form %}
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">{{ field.label }}</label>
+                    <input type="{{ field.field.widget.input_type }}" name="{{ field.html_name }}"
+                           class="form-control" {% if field.field.required %}required{% endif %}>
+                    {% if field.errors %}<div class="text-danger small">{{ field.errors }}</div>{% endif %}
+                </div>
+                {% endfor %}
+                <button type="submit" class="btn btn-ai w-100">Login</button>
+            </form>
+            <p class="text-center mt-3 mb-0">No account? <a href="{% url 'register' %}">Register</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

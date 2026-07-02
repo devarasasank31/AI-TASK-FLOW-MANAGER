@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card" style="height:80vh; display:flex; flex-direction:column;">
+            <div class="card-header d-flex align-items-center" style="background:linear-gradient(135deg,#1e3a5f,#2d6a9f);">
+                <i class="bi bi-robot text-white fs-4 me-2"></i>
+                <div>
+                    <div class="text-white fw-bold">TaskFlow AI Assistant</div>
+                    <div style="color:rgba(255,255,255,0.7); font-size:0.75rem;">Powered by Claude AI</div>
+                </div>
+            </div>
+
+            <div class="flex-grow-1 overflow-auto p-3" id="chatBox" style="background:#f8f9fa;">
+                <div class="text-center text-muted py-3">
+                    <i class="bi bi-robot fs-2" style="color:#7c3aed"></i>
+                    <p class="mt-2">Hello! I'm your AI task assistant. Ask me anything about your tasks!</p>
+                    <div class="d-flex flex-wrap gap-2 justify-content-center mt-3">
+                        <button class="btn btn-sm btn-outline-secondary quick-msg" data-msg="What are my pending tasks?">What are my pending tasks?</button>
+                        <button class="btn btn-sm btn-outline-secondary quick-msg" data-msg="Which tasks are high priority?">High priority tasks?</button>
+                        <button class="btn btn-sm btn-outline-secondary quick-msg" data-msg="Give me a productivity tip">Productivity tip</button>
+                    </div>
+                </div>
+                {% for msg in history %}
+                <div class="d-flex justify-content-end mb-3">
+                    <div class="p-3 rounded-3 text-white" style="background:#2d6a9f; max-width:75%;">{{ msg.message }}</div>
+                </div>
+                <div class="d-flex mb-3">
+                    <div class="p-3 rounded-3 bg-white border" style="max-width:75%;">
+                        <small class="text-purple fw-semibold" style="color:#7c3aed"><i class="bi bi-robot me-1"></i>AI</small>
+                        <div>{{ msg.response }}</div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <div class="card-footer p-3">
+                <div class="input-group">
+                    <input type="text" id="msgInput" class="form-control"
+                           placeholder="Ask about your tasks..." autocomplete="off">
+                    <button class="btn btn-ai" id="sendBtn">
+                        <span id="chatSpinner" class="spinner-border spinner-border-sm d-none"></span>
+                        <i class="bi bi-send" id="sendIcon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const csrf = '{{ csrf_token }}';
+const chatBox = document.getElementById('chatBox');
+
+function scrollBottom() {
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+scrollBottom();
+
+function addMsg(text, isUser) {
+    const div = document.createElement('div');
+    div.className = 'd-flex mb-3' + (isUser ? ' justify-content-end' : '');
+    div.innerHTML = isUser
+        ? `<div class="p-3 rounded-3 text-white" style="background:#2d6a9f;max-width:75%">${text}</div>`
+        : `<div class="p-3 rounded-3 bg-white border" style="max-width:75%"><small style="color:#7c3aed" class="fw-semibold"><i class="bi bi-robot me-1"></i>AI</small><div>${text}</div></div>`;
+    chatBox.appendChild(div);
+    scrollBottom();
+}
+
+async function sendMessage(text) {
+    if (!text.trim()) return;
+    addMsg(text, true);
+    document.getElementById('msgInput').value = '';
+    document.getElementById('chatSpinner').classList.remove('d-none');
+    document.getElementById('sendIcon').classList.add('d-none');
+
+    try {
+        const r = await fetch('/ai/chat/', {
+            method: 'POST',
+            headers: {'Content-Type':'application/json','X-CSRFToken': csrf},
+            body: JSON.stringify({message: text})
+        });
+        const data = await r.json();
+        addMsg(data.response || 'Sorry, something went wrong.', false);
+    } catch (e) {
+        addMsg('Connection error. Please try again.', false);
+    }
+
+    document.getElementById('chatSpinner').classList.add('d-none');
+    document.getElementById('sendIcon').classList.remove('d-none');
+}
+
+document.getElementById('sendBtn').onclick = () => {
+    sendMessage(document.getElementById('msgInput').value);
+};
+document.getElementById('msgInput').addEventListener('keypress', e => {
+    if (e.key === 'Enter') sendMessage(e.target.value);
+});
+document.querySelectorAll('.quick-msg').forEach(btn => {
+    btn.onclick = () => sendMessage(btn.dataset.msg);
+});
+</script>
+{% endblock %}
