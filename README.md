@@ -74,8 +74,11 @@ AI Chatbot Assistance
 
 ## 📸 Application Preview
 
-*(Add screenshots here)*
-
+screenshots/home.png
+screenshots/login.png
+screenshots/dashboard.png
+screenshots/edit-task.png
+screenshots/analytics.png
 - Login Page
 - Dashboard
 - AI Task Generator
